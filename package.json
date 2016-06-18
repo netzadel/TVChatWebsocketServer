@@ -1,0 +1,15 @@
+{
+  "name": "chat-socket-api",
+  "version": "1.0.0",
+  "description": "node websocket api with REST interfaces",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Michael Berrezak <RZWO> (michael@berrezak.com)",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.14.0",
+    "socket.io": "latest"
+  }
+}

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="style.css">
+
+
+    <script src="socket.io-client/socket.io.js"></script>
+    <script>
+        var messages = [];
+        var socket = io("http://localhost:8087");
+
+        function newUser() {
+            var user = document.getElementById("inputuser");
+
+            var list = document.getElementById("channelList");
+            var channel = list.options[list.selectedIndex].text;
+
+            socket.emit('new user', {
+                username: user.value,
+                channel: channel
+            });
+
+            document.getElementById("inputMessage").style.visibility = 'visible';
+            document.getElementById("msgButton").style.visibility = 'visible';
+        }
+
+
+        function sendMessage() {
+            var message = document.getElementById("inputMessage");
+            var user = document.getElementById("inputuser");
+            var list = document.getElementById("channelList");
+            var chan = list.options[list.selectedIndex].text;
+
+
+            socket.emit('new message', {
+                username: user.value,
+                channel: chan,
+                message: message.value
+            })
+        }
+
+        //Listen for the setup event and create rooms
+        socket.on('setup', function (data) {
+            alert('connected to server' + socket);
+            var rooms = data.rooms;
+
+            var list = document.getElementById('channelList');
+
+            for (var i = 0, len = rooms.length; i < len; i++) {
+                var entry = document.createElement('option');
+                entry.value = rooms[i];
+                entry.appendChild(document.createTextNode(rooms[i]));
+                list.appendChild(entry);
+            }
+        });
+
+        socket.on('user joined', function (data) {
+            alert("-> Server: user joined! " + data.username);
+        });
+
+        socket.on('message created', function (data) {
+            messages.push(data);
+            var list = document.getElementById('chat');
+            var entry = document.createElement('li');
+            entry.appendChild(document.createTextNode("(" + data.channel + ") " + data.username + " : " + data.message));
+            list.appendChild(entry);
+        });
+    </script>
+
+</head>
+<body>
+<div class="container">
+    <div class="card card-container">
+        <!-- <img class="profile-img-card" src="//lh3.googleusercontent.com/-6V8xOA6M7BA/AAAAAAAAAAI/AAAAAAAAAAA/rzlHcD0KYwo/photo.jpg?sz=120" alt="" /> -->
+        <img id="profile-img" class="profile-img-card" src="television.png"/>
+        <p id="info" class="profile-name-card"></p>
+        <span id="userfield" class="userfield"><input type="user" id="inputuser" class="form-control"
+                                                      placeholder=" Username" required autofocus>
+        <select id="channelList"></select><button class="" onclick="newUser()">Join</button></span>
+    </div><!-- /card-container -->
+    <div class="card card-container">
+        <span></span><input type="user" id="inputMessage" class="form-control" style="visibility: hidden"
+                            placeholder="Channel">
+        <button style="visibility: hidden" id="msgButton" onclick="sendMessage()">Send</button>
+        </span>
+
+        <ol id="chat"></ol>
+    </div>
+    >
+</div>
+</div><!-- /container -->
+</body>
+</html>
