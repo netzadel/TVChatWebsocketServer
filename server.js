@@ -17,8 +17,7 @@ var io = require('socket.io')(server);
 
 //Logic relevant variables
 
-var defaultRoom = 'General';
-var rooms = ["General", "ARD", "ZDF", "RTL", "KABEL1", "PRO7"];
+var channels = ["General", "ARD", "ZDF", "RTL", "KABEL1", "PRO7"];
 
 
 //Security settings
@@ -42,9 +41,9 @@ app.get('/', function (req, res) {
 });
 
 //This route produces a list of chat as filtered by 'room' query
-app.get('/rooms', function (req, res) {
+app.get('/channels', function (req, res) {
     //Find
-    res.json(rooms);
+    res.json(channels);
 });
 
 
@@ -52,28 +51,27 @@ app.get('/rooms', function (req, res) {
  all web socket connection settings are made here*/
 
 io.on('connection', function (socket) {
-    //Emit the rooms array
+    //Emit the channels array
     socket.emit('setup', {
-        rooms: rooms
+        channels: channels
     });
 
     //Listens for new user
     socket.on('new user', function (data) {
         console.log("new user: " + data.username + "/" + data.channel);
-        //New user joins the default room
         socket.join(data.channel);
-        //Tell all those in the room that a new user joined
+        //Tell all those in the channel that a new user joined
         io.in(data.channel).emit('user joined', data);
     });
 
     //Listens for switch channel
-    socket.on('switch room', function (data) {
-        //Handles joining and leaving rooms
+    socket.on('switch channel', function (data) {
+        //Handles joining and leaving channels
         //console.log(data);
-        socket.leave(data.oldRoom);
-        socket.join(data.newRoom);
-        io.in(data.oldRoom).emit('user left', data);
-        io.in(data.newRoom).emit('user joined', data);
+        socket.leave(data.oldChannel);
+        socket.join(data.newChannel);
+        io.in(data.oldChannel).emit('user left', data);
+        io.in(data.newChannel).emit('user joined', data);
 
     });
 

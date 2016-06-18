@@ -41,17 +41,16 @@
             })
         }
 
-        //Listen for the setup event and create rooms
+        //Listen for the setup event and create channels
         socket.on('setup', function (data) {
-            alert('connected to server' + socket);
-            var rooms = data.rooms;
+            var channels = data.channels;
 
             var list = document.getElementById('channelList');
 
-            for (var i = 0, len = rooms.length; i < len; i++) {
+            for (var i = 0, len = channels.length; i < len; i++) {
                 var entry = document.createElement('option');
-                entry.value = rooms[i];
-                entry.appendChild(document.createTextNode(rooms[i]));
+                entry.value = channels[i];
+                entry.appendChild(document.createTextNode(channels[i]));
                 list.appendChild(entry);
             }
         });
@@ -73,7 +72,6 @@
 <body>
 <div class="container">
     <div class="card card-container">
-        <!-- <img class="profile-img-card" src="//lh3.googleusercontent.com/-6V8xOA6M7BA/AAAAAAAAAAI/AAAAAAAAAAA/rzlHcD0KYwo/photo.jpg?sz=120" alt="" /> -->
         <img id="profile-img" class="profile-img-card" src="television.png"/>
         <p id="info" class="profile-name-card"></p>
         <span id="userfield" class="userfield"><input type="user" id="inputuser" class="form-control"
@@ -88,7 +86,7 @@
 
         <ol id="chat"></ol>
     </div>
-    >
+
 </div>
 </div><!-- /container -->
 </body>
