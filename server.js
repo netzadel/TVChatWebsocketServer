@@ -18,6 +18,7 @@ var io = require('socket.io')(server);
 //Logic relevant variables
 
 var channels = ["General", "ARD", "ZDF", "RTL", "KABEL1", "PRO7"];
+var userList = [];
 
 
 //Security settings
@@ -59,6 +60,8 @@ io.on('connection', function (socket) {
     //Listens for new user
     socket.on('new user', function (data) {
         console.log("new user: " + data.username + "/" + data.channel);
+
+        userList.push({'username': data.username, 'currentRoom': data.channel, 'socket': socket});
         socket.join(data.channel);
         //Tell all those in the channel that a new user joined
         io.in(data.channel).emit('user joined', data);
@@ -67,7 +70,7 @@ io.on('connection', function (socket) {
     //Listens for switch channel
     socket.on('switch channel', function (data) {
         //Handles joining and leaving channels
-        //console.log(data);
+        console.log(data);
         socket.leave(data.oldChannel);
         socket.join(data.newChannel);
         io.in(data.oldChannel).emit('user left', data);
@@ -77,23 +80,23 @@ io.on('connection', function (socket) {
 
     //Listens for a new chat message
     socket.on('new message', function (data) {
-        //Create message
-        // var newMsg = new Chat({
-        //     username: data.username,
-        //     content: data.message,
-        //     room: data.room.toLowerCase(),
-        //     created: new Date()
-        // });
-        // //Save it to database
-        // newMsg.save(function(err, msg){
-        //     //Send message to those connected in the room
-        //     io.in(msg.room).emit('message created', msg);
-        // });
         console.log(data);
         io.in(data.channel).emit('message created', data);
+    });
+
+    //Listens for disconnect
+    socket.on('disconnect', function (data) {
+        for (var i = 0, len = userList.length; i < len; i++) {
+            if(socket.id == userList[i].socket.id){
+                console.log(userList[i].username + ' disconnected from server');
+                io.in(userList[i].currentRoom).emit('user disconnected', userList[i].username);
+                userList.splice(i,1);
+            }
+        }
     });
 });
 
 
+// General server settings
 server.listen(PORT);
 console.log('TVChat WebSocket online on port ' +  PORT);

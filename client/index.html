@@ -41,6 +41,14 @@
             })
         }
 
+        function disconnect(){
+            var list = document.getElementById("channelList");
+            var chan = list.options[list.selectedIndex].text;
+
+            socket.disconnect();
+            location.reload(true);
+        }
+
         //Listen for the setup event and create channels
         socket.on('setup', function (data) {
             var channels = data.channels;
@@ -66,6 +74,10 @@
             entry.appendChild(document.createTextNode("(" + data.channel + ") " + data.username + " : " + data.message));
             list.appendChild(entry);
         });
+
+        socket.on('user disconnected', function (data) {
+            alert("-> Server: user disconnected! " + data);
+        });
     </script>
 
 </head>
@@ -74,13 +86,16 @@
     <div class="card card-container">
         <img id="profile-img" class="profile-img-card" src="television.png"/>
         <p id="info" class="profile-name-card"></p>
-        <span id="userfield" class="userfield"><input type="user" id="inputuser" class="form-control"
+        <span id="userfield" class="userfield">
+            <input type="user" id="inputuser" class="form-control"
                                                       placeholder=" Username" required autofocus>
-        <select id="channelList"></select><button class="" onclick="newUser()">Join</button></span>
+        <select id="channelList"></select><button class="" onclick="newUser()">Join</button>
+        <button class="" onclick="disconnect()">Close</button>
+        </span>
     </div><!-- /card-container -->
     <div class="card card-container">
         <span></span><input type="user" id="inputMessage" class="form-control" style="visibility: hidden"
-                            placeholder="Channel">
+                            placeholder="Message">
         <button style="visibility: hidden" id="msgButton" onclick="sendMessage()">Send</button>
         </span>
 
