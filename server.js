@@ -53,9 +53,17 @@ app.get('/channels', function (req, res) {
 
 io.on('connection', function (socket) {
     //Emit the channels array
-    socket.emit('setup', {
-        channels: channels
-    });
+
+    userNameList = [];
+
+    for (i = 0, len = userList.length; i < len; i++) {
+        user = userList[i];
+        userNameList.push(user.username);
+    }
+
+
+    data = {'userlist': userNameList, 'channels': channels}
+    socket.emit('setup', data);
 
     //Listens for new user
     socket.on('new user', function (data) {
@@ -86,11 +94,13 @@ io.on('connection', function (socket) {
 
     //Listens for disconnect
     socket.on('disconnect', function (data) {
+        console.log(userList);
         for (var i = 0, len = userList.length; i < len; i++) {
             if(socket.id == userList[i].socket.id){
                 console.log(userList[i].username + ' disconnected from server');
                 io.in(userList[i].currentRoom).emit('user disconnected', userList[i].username);
                 userList.splice(i,1);
+                break;
             }
         }
     });

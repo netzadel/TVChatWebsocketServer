@@ -51,7 +51,9 @@
 
         //Listen for the setup event and create channels
         socket.on('setup', function (data) {
+            console.log(data);
             var channels = data.channels;
+            var allUser = data.userlist;
 
             var list = document.getElementById('channelList');
 
@@ -61,16 +63,27 @@
                 entry.appendChild(document.createTextNode(channels[i]));
                 list.appendChild(entry);
             }
+
+
+            var ulist = document.getElementById('userList');
+
+            for (var i = 0, len = allUser.length; i < len; i++) {
+                var entry = document.createElement('li');
+                entry.value = allUser[i];
+                entry.appendChild(document.createTextNode(allUser[i]));
+                ulist.appendChild(entry);
+            }
         });
 
         socket.on('user joined', function (data) {
-            alert("-> Server: user joined! " + data.username);
+            info = document.getElementById('info');
+            info.innerText = "-> Server: user joined! " + data.username;
         });
 
         socket.on('message created', function (data) {
             messages.push(data);
-            var list = document.getElementById('chat');
-            var entry = document.createElement('li');
+            list = document.getElementById('chat');
+            entry = document.createElement('li');
             entry.appendChild(document.createTextNode("(" + data.channel + ") " + data.username + " : " + data.message));
             list.appendChild(entry);
         });
@@ -93,6 +106,9 @@
         <button class="" onclick="disconnect()">Close</button>
         </span>
     </div><!-- /card-container -->
+    <div class="card card-container">
+        <ol id="userList"></ol>
+    </div>
     <div class="card card-container">
         <span></span><input type="user" id="inputMessage" class="form-control" style="visibility: hidden"
                             placeholder="Message">
