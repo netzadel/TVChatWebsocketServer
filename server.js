@@ -53,27 +53,36 @@ app.get('/channels', function (req, res) {
 
 io.on('connection', function (socket) {
     //Emit the channels array
-
-    userNameList = [];
-
+    var userNameList = [];
     for (i = 0, len = userList.length; i < len; i++) {
-        user = userList[i];
+        var user = userList[i];
         userNameList.push(user.username);
     }
-
-
-    data = {'userlist': userNameList, 'channels': channels}
+    var data = {'userlist': userNameList, 'channels': channels};
     socket.emit('setup', data);
+
 
     //Listens for new user
     socket.on('new user', function (data) {
         console.log("new user: " + data.username + "/" + data.channel);
-
         userList.push({'username': data.username, 'currentRoom': data.channel, 'socket': socket});
         socket.join(data.channel);
-        //Tell all those in the channel that a new user joined
         io.in(data.channel).emit('user joined', data);
     });
+
+    //Listen to channel user request request
+    socket.on('channel user', function(data) {
+        var userNameList = [];
+        for (i = 0, len = userList.length; i < len; i++) {
+            var user = userList[i];
+            if(user.currentRoom == data.channel){
+                userNameList.push(user.username);
+            }
+        }
+        var response = {'userlist': userNameList};
+        socket.emit('user in channel', response);
+    });
+
 
     //Listens for switch channel
     socket.on('switch channel', function (data) {
@@ -86,18 +95,19 @@ io.on('connection', function (socket) {
 
     });
 
+
     //Listens for a new chat message
     socket.on('new message', function (data) {
         console.log(data);
         io.in(data.channel).emit('message created', data);
     });
 
+
     //Listens for disconnect
     socket.on('disconnect', function (data) {
-        console.log(userList);
         for (var i = 0, len = userList.length; i < len; i++) {
             if(socket.id == userList[i].socket.id){
-                console.log(userList[i].username + ' disconnected from server');
+                console.log(userList[i].username + ' disconnected from server. ' + userList.length + ' users remaining.');
                 io.in(userList[i].currentRoom).emit('user disconnected', userList[i].username);
                 userList.splice(i,1);
                 break;

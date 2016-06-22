@@ -13,15 +13,15 @@
 
         function newUser() {
             var user = document.getElementById("inputuser");
-
             var list = document.getElementById("channelList");
             var channel = list.options[list.selectedIndex].text;
-
             socket.emit('new user', {
                 username: user.value,
                 channel: channel
             });
-
+            socket.emit('channel user', {
+                channel: channel
+            });
             document.getElementById("inputMessage").style.visibility = 'visible';
             document.getElementById("msgButton").style.visibility = 'visible';
         }
@@ -32,8 +32,6 @@
             var user = document.getElementById("inputuser");
             var list = document.getElementById("channelList");
             var chan = list.options[list.selectedIndex].text;
-
-
             socket.emit('new message', {
                 username: user.value,
                 channel: chan,
@@ -41,32 +39,26 @@
             })
         }
 
-        function disconnect(){
-            var list = document.getElementById("channelList");
-            var chan = list.options[list.selectedIndex].text;
 
+        function disconnect() {
             socket.disconnect();
             location.reload(true);
         }
+
 
         //Listen for the setup event and create channels
         socket.on('setup', function (data) {
             console.log(data);
             var channels = data.channels;
             var allUser = data.userlist;
-
             var list = document.getElementById('channelList');
-
             for (var i = 0, len = channels.length; i < len; i++) {
                 var entry = document.createElement('option');
                 entry.value = channels[i];
                 entry.appendChild(document.createTextNode(channels[i]));
                 list.appendChild(entry);
             }
-
-
             var ulist = document.getElementById('userList');
-
             for (var i = 0, len = allUser.length; i < len; i++) {
                 var entry = document.createElement('li');
                 entry.value = allUser[i];
@@ -75,10 +67,30 @@
             }
         });
 
+
         socket.on('user joined', function (data) {
             info = document.getElementById('info');
             info.innerText = "-> Server: user joined! " + data.username;
+            var ulist = document.getElementById('userList');
+            var entry = document.createElement('li')
+            entry.appendChild(document.createTextNode(data.username));
+            ulist.appendChild(entry);
         });
+
+        socket.on('user in channel', function (data) {
+            var ulist = document.getElementById('userList');
+            while (ulist.firstChild) {
+                ulist.removeChild(ulist.firstChild);
+            }
+            var channelUser = data.userlist;
+            for (var i = 0, len = channelUser.length; i < len; i++) {
+                var entry = document.createElement('li');
+                entry.value = channelUser[i];
+                entry.appendChild(document.createTextNode(channelUser[i]));
+                ulist.appendChild(entry);
+            }
+        });
+
 
         socket.on('message created', function (data) {
             messages.push(data);
@@ -88,10 +100,20 @@
             list.appendChild(entry);
         });
 
+
         socket.on('user disconnected', function (data) {
             alert("-> Server: user disconnected! " + data);
+            list = document.getElementById('userList');
+            for (var i = 0, len = list.childNodes.length; i < len; i++) {
+                node = list.childNodes.item(i);
+                if (node.textContent == data) {
+                    list.removeChild(node);
+                    break;
+                }
+            }
         });
     </script>
+
 
 </head>
 <body>
@@ -101,7 +123,7 @@
         <p id="info" class="profile-name-card"></p>
         <span id="userfield" class="userfield">
             <input type="user" id="inputuser" class="form-control"
-                                                      placeholder=" Username" required autofocus>
+                   placeholder=" Username" required autofocus>
         <select id="channelList"></select><button class="" onclick="newUser()">Join</button>
         <button class="" onclick="disconnect()">Close</button>
         </span>
