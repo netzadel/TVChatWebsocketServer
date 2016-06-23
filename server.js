@@ -45,7 +45,7 @@ app.get('/', function (req, res) {
 });
 
 
-//This route produces a list of chat as filtered by 'room' query
+//This route produces a list of channels from hoerzu, creates an array and sends it back.
 app.get('/channels', function (req, res) {
     var allLinkedChannels = [];
     var pageToVisit = "http://www.hoerzu.de/text/tv-programm/jetzt.php";
@@ -57,20 +57,23 @@ app.get('/channels', function (req, res) {
         if (response.statusCode === 200) {
             // Parse the document body
             var $ = cheerio.load(body);
-            var links = $('a');
-            $(links).each(function (i, link) {
-                if ($(link).text() != '') {
-                    var channelInfo = $(link).text();
-                    var channelTime = channelInfo.split(',').pop();
-                    var channelName = channelInfo.split(',').shift();
-                    var channelProgram = channelInfo.split(',').slice(1, -1);
+            var txt = cheerio.text($('body'));
+            var untaggedLinks = txt.split('\n');
+            //enhance the String class with an additional function called contains()
+            String.prototype.contains = function(it) { return this.indexOf(it) != -1; };
+            for (var i = 0; i < untaggedLinks.length; i++) {
+                var channelInfo = untaggedLinks[i];
+                if (channelInfo.contains('*')) {
+                    var channelTime = channelInfo.split(',').pop().substring(1);
+                    var channelName = channelInfo.split(',').shift().substring(2);
+                    var channelProgram = channelInfo.split(',').slice(1, -1).toString().substring(1);
                     allLinkedChannels.push({
                         'channelName:': channelName,
                         'channelProgram': channelProgram,
                         'channelTime': channelTime
                     });
                 }
-            });
+            }
             res.json(allLinkedChannels);
         }
     });
