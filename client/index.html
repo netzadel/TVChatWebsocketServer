@@ -54,8 +54,8 @@
             var list = document.getElementById('channelList');
             for (var i = 0, len = channels.length; i < len; i++) {
                 var entry = document.createElement('option');
-                entry.value = channels[i];
-                entry.appendChild(document.createTextNode(channels[i]));
+                entry.value = channels[i].channelName;
+                entry.appendChild(document.createTextNode(channels[i].channelName));
                 list.appendChild(entry);
             }
             var ulist = document.getElementById('userList');

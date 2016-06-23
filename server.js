@@ -21,8 +21,45 @@ var io = require('socket.io')(server);
 
 //Logic relevant variables
 
-var channels = ["General", "ARD", "ZDF", "RTL", "KABEL1", "PRO7"];
+var channels = [];
 var userList = [];
+
+
+function updateChannelList() {
+    var pageToVisit = "http://www.hoerzu.de/text/tv-programm/jetzt.php";
+    request(pageToVisit, function (error, response, body) {
+        if (error) {
+            console.log("Error: " + error);
+        }
+        // Check status code (200 is HTTP OK)
+        if (response.statusCode === 200) {
+            // Parse the document body
+            var $ = cheerio.load(body);
+            var txt = cheerio.text($('body'));
+            var untaggedLinks = txt.split('\n');
+            //enhance the String class with an additional function called contains()
+            String.prototype.contains = function (it) {
+                return this.indexOf(it) != -1;
+            };
+            for (var i = 0; i < untaggedLinks.length; i++) {
+                var channelInfo = untaggedLinks[i];
+                if (channelInfo.contains('*')) {
+                    var channelTime = channelInfo.split(',').pop().substring(1);
+                    var channelName = channelInfo.split(',').shift().substring(2);
+                    var channelProgram = channelInfo.split(',').slice(1, -1).toString().substring(1);
+                    channels.push({
+                        'channelName': channelName,
+                        'channelProgram': channelProgram,
+                        'channelTime': channelTime
+                    });
+                }
+            }
+        }
+    });
+}
+
+//update channels every 5 minutes
+setInterval(updateChannelList, 300000);
 
 
 //Security settings
@@ -47,36 +84,7 @@ app.get('/', function (req, res) {
 
 //This route produces a list of channels from hoerzu, creates an array and sends it back.
 app.get('/channels', function (req, res) {
-    var allLinkedChannels = [];
-    var pageToVisit = "http://www.hoerzu.de/text/tv-programm/jetzt.php";
-    request(pageToVisit, function (error, response, body) {
-        if (error) {
-            console.log("Error: " + error);
-        }
-        // Check status code (200 is HTTP OK)
-        if (response.statusCode === 200) {
-            // Parse the document body
-            var $ = cheerio.load(body);
-            var txt = cheerio.text($('body'));
-            var untaggedLinks = txt.split('\n');
-            //enhance the String class with an additional function called contains()
-            String.prototype.contains = function(it) { return this.indexOf(it) != -1; };
-            for (var i = 0; i < untaggedLinks.length; i++) {
-                var channelInfo = untaggedLinks[i];
-                if (channelInfo.contains('*')) {
-                    var channelTime = channelInfo.split(',').pop().substring(1);
-                    var channelName = channelInfo.split(',').shift().substring(2);
-                    var channelProgram = channelInfo.split(',').slice(1, -1).toString().substring(1);
-                    allLinkedChannels.push({
-                        'channelName:': channelName,
-                        'channelProgram': channelProgram,
-                        'channelTime': channelTime
-                    });
-                }
-            }
-            res.json(allLinkedChannels);
-        }
-    });
+    res.json(channels);
 });
 
 
@@ -84,11 +92,18 @@ app.get('/channels', function (req, res) {
  all web socket connection settings are made here*/
 io.on('connection', function (socket) {
     //Emit the channels array
+    //if channel list is empty manually refresh the list
+    if (channels.length == 0) {
+        updateChannelList();
+        console.log('Channel list is empty, updating!');
+    }
+
     var userNameList = [];
     for (i = 0, len = userList.length; i < len; i++) {
         var user = userList[i];
         userNameList.push(user.username);
     }
+
     var data = {'userlist': userNameList, 'channels': channels};
     socket.emit('setup', data);
 
