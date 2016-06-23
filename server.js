@@ -9,6 +9,10 @@
 
 var PORT = 8087;
 
+var request = require('request');
+var cheerio = require('cheerio');
+//var URL = require('url-parse');
+
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
@@ -22,7 +26,6 @@ var userList = [];
 
 
 //Security settings
-
 app.all('*', function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
@@ -34,23 +37,48 @@ app.all('*', function (req, res, next) {
     }
 });
 
-//URL configuration
 
+//URL configuration
 app.get('/', function (req, res) {
     //send the index.html in our public directory
     res.sendFile('hello.html', {root: __dirname + '/public'});
 });
 
+
 //This route produces a list of chat as filtered by 'room' query
 app.get('/channels', function (req, res) {
-    //Find
-    res.json(channels);
+    var allLinkedChannels = [];
+    var pageToVisit = "http://www.hoerzu.de/text/tv-programm/jetzt.php";
+    request(pageToVisit, function (error, response, body) {
+        if (error) {
+            console.log("Error: " + error);
+        }
+        // Check status code (200 is HTTP OK)
+        if (response.statusCode === 200) {
+            // Parse the document body
+            var $ = cheerio.load(body);
+            var links = $('a');
+            $(links).each(function (i, link) {
+                if ($(link).text() != '') {
+                    var channelInfo = $(link).text();
+                    var channelTime = channelInfo.split(',').pop();
+                    var channelName = channelInfo.split(',').shift();
+                    var channelProgram = channelInfo.split(',').slice(1, -1);
+                    allLinkedChannels.push({
+                        'channelName:': channelName,
+                        'channelProgram': channelProgram,
+                        'channelTime': channelTime
+                    });
+                }
+            });
+            res.json(allLinkedChannels);
+        }
+    });
 });
 
 
 /*This is the socket logic,
  all web socket connection settings are made here*/
-
 io.on('connection', function (socket) {
     //Emit the channels array
     var userNameList = [];
@@ -70,12 +98,13 @@ io.on('connection', function (socket) {
         io.in(data.channel).emit('user joined', data);
     });
 
+
     //Listen to channel user request request
-    socket.on('channel user', function(data) {
+    socket.on('channel user', function (data) {
         var userNameList = [];
         for (i = 0, len = userList.length; i < len; i++) {
             var user = userList[i];
-            if(user.currentRoom == data.channel){
+            if (user.currentRoom == data.channel) {
                 userNameList.push(user.username);
             }
         }
@@ -106,10 +135,10 @@ io.on('connection', function (socket) {
     //Listens for disconnect
     socket.on('disconnect', function (data) {
         for (var i = 0, len = userList.length; i < len; i++) {
-            if(socket.id == userList[i].socket.id){
+            if (socket.id == userList[i].socket.id) {
                 console.log(userList[i].username + ' disconnected from server. ' + userList.length + ' users remaining.');
                 io.in(userList[i].currentRoom).emit('user disconnected', userList[i].username);
-                userList.splice(i,1);
+                userList.splice(i, 1);
                 break;
             }
         }
@@ -119,4 +148,4 @@ io.on('connection', function (socket) {
 
 // General server settings
 server.listen(PORT);
-console.log('TVChat WebSocket online on port ' +  PORT);
+console.log('TVChat WebSocket online on port ' + PORT);
